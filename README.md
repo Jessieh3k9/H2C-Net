@@ -1,2 +1,4 @@
 # H2C-Net
-The related paper for this code has been published. However, the code here is still being refined and will be made publicly available later. Thank you for your understanding and patience.
+The code for "Multi-task OCTA image segmentation with innovative dimension compression"
+
+Guogang Cao, Zeyu Peng, Zhilin Zhou, Yan Wu, Yunqing Zhang, Rugang Yan. Multi-task OCTA image segmentation with innovative dimension compression, Pattern Recognition, 2025(159), 111123, https://doi.org/10.1016/j.patcog.2024.111123. (IF 7.5)
