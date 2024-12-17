@@ -47,12 +47,15 @@ class CubeDataset(Dataset):
             ct = list(self.datasetlist['label'])[index]
             label[0,:,:]=cv2.imread(self.datasetlist['label'][ct], cv2.IMREAD_GRAYSCALE).astype(np.float32)
 
+
         #data augmentation
         if self.is_dataaug==True:
             data,label=self.augmentation(data,label)
         data = torch.from_numpy(np.ascontiguousarray(data))
         label = torch.from_numpy(np.ascontiguousarray(label))
         return data,label,ct
+
+
 
     def __len__(self):
         return self.datanum

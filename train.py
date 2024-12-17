@@ -24,8 +24,8 @@ def train_net(net,device):
     DATA_SIZE = opt.data_size
     best_valid_miou=0
     # save_loss=[]
-    model_save_path = os.path.join(opt.saveroot, 'check_points_pmodel2')
-    best_model_save_path = os.path.join(opt.saveroot, 'best_model_pmodel2')
+    model_save_path = os.path.join(opt.saveroot, '/home/jessica/H2C-Net/logs/check_points6m/check_points_pmodel2')
+    best_model_save_path = os.path.join(opt.saveroot, '/home/jessica/H2C-Net/logs/check_points6m/best_model_pmodel2')
     # Read Data
     print("Start Setup dataset reader")
     train_dataset = BatchDataReader.CubeDataset(opt.dataroot, opt.train_ids,opt.data_size,opt.modality_filename,opt.label_filename,is_dataaug=True)
@@ -45,6 +45,7 @@ def train_net(net,device):
 
     Loss_CE = nn.CrossEntropyLoss()
     Loss_DSC= utils.DiceLoss()
+    
     #Start train
     for epoch in tqdm(range(1, opt.num_epochs + 1)):
         net.train()
@@ -94,9 +95,13 @@ def train_net(net,device):
             print("Step:{}, val_dice:{}".format(epoch, val_dice))
             print("Step:{}, val_acc:{}".format(epoch, val_acc))
             #Save model
-            checkpointName = '{:.6f}'.format(val_miou) + '-' +f'{epoch}.pth'
-            torch.save(net.module.state_dict(),os.path.join(model_save_path,checkpointName))
-            logging.info(f'Checkpoint {epoch} saved !')
+            checkpointName = '{:.6f}'.format(val_miou) + '-' + f'{epoch}.pth'
+            torch.save(net.state_dict(), os.path.join(model_save_path, checkpointName))
+            logging.info(f'Checkpoint {epoch} saved!')
+
+            #checkpointName = '{:.6f}'.format(val_miou) + '-' +f'{epoch}.pth'
+            #torch.save(net.module.state_dict(),os.path.join(model_save_path,checkpointName))
+            #logging.info(f'Checkpoint {epoch} saved !')
             #save best model
             if val_miou > best_valid_miou:
                 temp = '{:.6f}'.format(val_miou)
@@ -109,18 +114,22 @@ def train_net(net,device):
                 best_valid_miou = val_miou
     # io.savemat(os.path.join(opt.saveroot, 'loss.mat'),{'loss':save_loss})
 
+        
+
 if __name__ == '__main__':
     #tensorboard --inspect --logdir
     rq = time.strftime('%Y%m%d%H%M', time.localtime(time.time()))
     #loading options
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ['CUDA_VISIBLE_DEVICES'] = "1,2"
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     opt = TrainOptions().parse()
-    #setting GPU
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '5692'
-    torch.distributed.init_process_group('nccl',world_size=1,rank=0)
+    # #setting GPU
+    # os.environ['MASTER_ADDR'] = 'localhost'
+    # os.environ['MASTER_PORT'] = '5692'
+    # torch.distributed.init_process_group('nccl',world_size=1,rank=0)
+
     
+    #选择设备
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
     net = model.H2C_Net(in_channels=opt.in_channels, n_classes=opt.n_classes)
@@ -136,7 +145,8 @@ if __name__ == '__main__':
         logging.info(f'Model loaded from {opt.load}')
     #input the model into GPU
     net.to(device=device)
-    net=torch.nn.DataParallel(net,[0,1]).cuda()
+    # net=net.cuda()
+    # net=torch.nn.DataParallel(net,[0,1]).cuda()
     # device = torch.device("cuda:1,2")
     # net.to(device)
     try:
@@ -148,6 +158,9 @@ if __name__ == '__main__':
             sys.exit(0)
         except SystemExit:
             os._exit(0)
+            
+
+
 
 
 

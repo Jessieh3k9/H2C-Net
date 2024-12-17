@@ -5,10 +5,12 @@ import torch
 import os
 from tqdm import tqdm
 import torch.nn as nn
-import BatchDataReader
+import BatchDataReader  #使用 BatchDataReader.CubeDataset 加载测试数据集
 from prefetch_generator import BackgroundGenerator
+
+#通过 directMAXpool 层对数据进行降采样 高度缩小1/32
 class directMAXpool(nn.Module):
-    #ks表示几个压在一起
+    #ks表示几个压在一起 
     def __init__(self):
         super().__init__()
         # self.maxpool=nn.MaxPool3d(kernel_size=[23,1,1],stride=[7,1,1])
@@ -16,6 +18,11 @@ class directMAXpool(nn.Module):
     def forward(self,x):
         x = self.maxpool(x)
         return x
+"""
+make_one_hot()将类别索引转换为独热编码
+将类别索引转换为独热编码的目的主要是与模型的训练机制兼容，支持多类别和多标签任务，
+提高计算灵活性，并避免类别之间的错误关系假设。这种表示方法对分类、分割和其他任务的实现至关重要。        
+"""
 def make_one_hot(input, shape):
     """Convert class index tensor to one hot encoding tensor.
     Args:
@@ -27,10 +34,15 @@ def make_one_hot(input, shape):
     result = torch.zeros(shape)
     result.scatter_(1, input.cpu(), 1)
     return result
-def split_test(data,batch_size, data_size):
-    outshape=[batch_size,1,data_size*2,data_size*2]
+"""
+拆分拼接(UA+C)
+"""
+def split_test(data,batch_size, data_size): #1，1，128*304*304 
+    outshape=[batch_size,1,data_size*2,data_size*2] #(batch_size, 1, 256, 608)
+
     result = torch.zeros(outshape)
     result = result.to(data.device)
+    
     i=0
     for x in range(0, data_size*2, data_size):
         for y in range(0, data_size*2, data_size):
@@ -38,9 +50,14 @@ def split_test(data,batch_size, data_size):
             result[:,0,x:x+data_size,y:y+data_size]=input
             i=i+1
     return result
-
+"""
+代码用途
+将标注张量（类别索引）转换为可视化图像，用颜色直观表达。
+常用于分割任务中，验证标注的正确性或可视化模型预测结果。
+    
+"""
 def create_visual_anno(anno):
-    """"""
+    """将标注张量 anno 转换为一个可视化图像，使用不同的颜色表示不同的类别"""
     # assert np.max(anno) <= 7, "only 7 classes are supported, add new color in label2color_dict"
     label2color_dict = {
         0: [53, 32, 15],
@@ -54,19 +71,20 @@ def create_visual_anno(anno):
     shape =anno.shape[2]
     visual =  np.zeros((400, 400, 3))
     visual_anno = np.zeros((1600, 1600, 3))
-    for i in range(shape):  # i for h
-        for j in range(shape):
+    for i in range(shape):  # i for h # 遍历高度
+        for j in range(shape):        # 遍历宽度
             # print(label2color_dict[anno[0,i,j]])
-            color = label2color_dict[anno[0,i, j]]
-            visual[i, j, 0] = color[0]
-            visual[i, j, 1] = color[1]
-            visual[i, j, 2] = color[2]
+            color = label2color_dict[anno[0,i, j]]  # 查找当前像素的颜色
+            visual[i, j, 0] = color[0]   # 红色通道
+            visual[i, j, 1] = color[1]   # 蓝色通道
+            visual[i, j, 2] = color[2]   # 绿色通道
     print(visual.shape)
-    for x in range(0, shape*4, shape):
-        for y in range(0, shape*4, shape):
+    for x in range(0, shape*4, shape):      #遍历大图的高度
+        for y in range(0, shape*4, shape):  #遍历大图的宽度
             visual_anno[x:x+shape,y:y+shape,:]=visual
             i=i+1
     return visual_anno
+
 def create_visual_predict(predict):
     """"""
     # assert np.max(anno) <= 7, "only 7 classes are supported, add new color in label2color_dict"
@@ -82,14 +100,14 @@ def create_visual_predict(predict):
     shape =predict.shape[2]
     visual =  np.zeros((1600, 1600, 3))
     # visual_anno = np.zeros((1600, 1600, 3))
-    for i in range(shape):  # i for h
-        for j in range(shape):
+    for i in range(shape):  # i for h # 遍历高度
+        for j in range(shape):# 遍历宽度
             print(predict)
             # print(label2color_dict[anno[0,i,j]])
-            color = label2color_dict[predict[0,i, j]]
-            visual[i, j, 0] = color[0]
-            visual[i, j, 1] = color[1]
-            visual[i, j, 2] = color[2]
+            color = label2color_dict[predict[0,i, j]]  # 查找当前像素的颜色
+            visual[i, j, 0] = color[0]   # 红色通道
+            visual[i, j, 1] = color[1]   # 绿色通道
+            visual[i, j, 2] = color[2]   # 蓝色通道
     return visual
 # def split_test(data,batch_size, data_size):
 #     outshape=[batch_size,1,data_size*4,data_size*4]

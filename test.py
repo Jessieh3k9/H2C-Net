@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import torch
 from tqdm import tqdm
 from prefetch_generator import BackgroundGenerator
@@ -100,13 +100,14 @@ if __name__ == '__main__':
     opt = TestOptions().parse()
     #setting GPU
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logging.info(f'Using device {device}')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #logging.info(f'Using device {device}')
+    print(f'Using device {device}')
     #loading network
 
     net = model.H2C_Net(in_channels=opt.in_channels, n_classes=opt.n_classes)
     #load trained model
-    restore_path = '/home/image/PZY/Code/H2C_Net/logs/best_model'
+    restore_path = '/home/jessica/H2C-Net/logs/check_points/check_points_pmodel2/0.891807-203.pth'
     torch.cuda.empty_cache()
     if os.path.isfile(restore_path):
     # 如果是文件路径，获取其目录部分
@@ -121,14 +122,16 @@ if __name__ == '__main__':
         )
         #input the model into GPU
         net.to(device=device)
-        try:
-            test_iou = test_net(net=net,device=device)
-            test[checkpoint_path]=test_iou
-        except KeyboardInterrupt:
-            torch.save(net.state_dict(), 'INTERRUPTED.pth')
-            logging.info('Saved interrupt')
-            try:
-                sys.exit(0)
-            except SystemExit:
-                os._exit(0)
+        test_iou = test_net(net=net, device=device)
+        test[checkpoint_path] = test_iou
+        #try:
+        #    test_iou = test_net(net=net,device=device)
+        #    test[checkpoint_path]=test_iou
+        #except KeyboardInterrupt:
+        #    torch.save(net.state_dict(), 'INTERRUPTED.pth')
+        #    logging.info('Saved interrupt')
+        #    try:
+        #        sys.exit(0)
+        #    except SystemExit:
+        #        os._exit(0)
     pprint(test)
